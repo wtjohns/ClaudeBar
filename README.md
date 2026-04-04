@@ -25,6 +25,20 @@ A native macOS menu bar app that shows your Claude 5-hour session usage as a per
 - macOS 13 (Ventura) or later
 - Xcode 15+ to build from source
 
+## Installation
+
+1. Download the latest `ClaudeBar-x.x.x.dmg` from [Releases](https://github.com/wtjohns/ClaudeBar/releases)
+2. Open the DMG and drag **ClaudeBar.app** to your Applications folder
+3. Run this command in Terminal to clear the quarantine flag (required for unsigned apps):
+
+```bash
+xattr -dr com.apple.quarantine /Applications/ClaudeBar.app
+```
+
+4. Open ClaudeBar from Applications — it will appear in your menu bar with no Dock icon
+
+> macOS will show "damaged and can't be opened" without step 3. This is Gatekeeper blocking unsigned apps downloaded from the internet — the command removes that restriction.
+
 ## Build from Source
 
 ```bash
