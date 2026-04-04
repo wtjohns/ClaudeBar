@@ -1,0 +1,28 @@
+name: ClaudeBar
+options:
+  bundleIdPrefix: com.wtjohns
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+
+targets:
+  ClaudeBar:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: ClaudeBar
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wtjohns.ClaudeBar
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        INFOPLIST_FILE: ClaudeBar/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ClaudeBar/ClaudeBar.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+    dependencies:
+      - sdk: WebKit.framework
