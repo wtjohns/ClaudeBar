@@ -16,6 +16,7 @@
 		98C39106549B5333E50DC0B4 /* OAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7B0A36E88396DB8FAA658B /* OAuthService.swift */; };
 		B370453F9598A14564939E58 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3886CA8C86B535BB48261C12 /* KeychainService.swift */; };
 		B9C44247DA1B6F1EDFA15C58 /* LoginWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0DCE07C4374E9F073B69CB /* LoginWindowController.swift */; };
+		D2592E9B6565DCFBC71769F5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48D2EF2E434694289362E89F /* Assets.xcassets */; };
 		D3A188A0B799FAB6FF451694 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C592DAA9AD0DF7E8B70DCB48 /* Models.swift */; };
 		EB2F27ED4860F6303C9F7A7C /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DFC6ABE422793D8BA109AA3C /* WebKit.framework */; };
 /* End PBXBuildFile section */
@@ -24,6 +25,7 @@
 		149F3FA09515A903C468DFB1 /* ScraperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScraperService.swift; sourceTree = "<group>"; };
 		3886CA8C86B535BB48261C12 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		395D9684D9B014BD7D00629D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		48D2EF2E434694289362E89F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6F0DCE07C4374E9F073B69CB /* LoginWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWindowController.swift; sourceTree = "<group>"; };
 		7B7B0A36E88396DB8FAA658B /* OAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthService.swift; sourceTree = "<group>"; };
 		B29F2ABCDF995417428CB83B /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
@@ -104,6 +106,7 @@
 		C7659DE78B4D9A0574CC0F6C /* ClaudeBar */ = {
 			isa = PBXGroup;
 			children = (
+				48D2EF2E434694289362E89F /* Assets.xcassets */,
 				B5293526F91B53326FAAF6B5 /* ClaudeBarApp.swift */,
 				DC828E1C7AAF6FC78BBD5C10 /* Info.plist */,
 				512B085203CC004DF12033CB /* Models */,
@@ -131,6 +134,7 @@
 			buildConfigurationList = E0574D079C1C2E6151FBF1F1 /* Build configuration list for PBXNativeTarget "ClaudeBar" */;
 			buildPhases = (
 				FD19FF3FC0F75EA711755640 /* Sources */,
+				F0FBDB0CD2407D31CEE069D7 /* Resources */,
 				69620D6A6944CC7E49514B0F /* Frameworks */,
 			);
 			buildRules = (
@@ -177,6 +181,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F0FBDB0CD2407D31CEE069D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2592E9B6565DCFBC71769F5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		FD19FF3FC0F75EA711755640 /* Sources */ = {

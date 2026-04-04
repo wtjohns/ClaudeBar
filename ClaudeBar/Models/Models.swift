@@ -13,7 +13,6 @@ struct ClaudeUsage {
     let bars: [UsageBar]
     let isAuthenticated: Bool
     let plan: String?
-    let email: String?
 }
 
 // MARK: - Billing

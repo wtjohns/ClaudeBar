@@ -5,7 +5,7 @@ import WebKit
 
 private let usageJS = """
 (function() {
-    const usage = { bars: [], resetDate: null, isAuthenticated: true, plan: null, email: null };
+    const usage = { bars: [], resetDate: null, isAuthenticated: true, plan: null };
 
     const href = window.location.href;
     if (href.includes('/login') || href.includes('/signup')) {
@@ -47,9 +47,6 @@ private let usageJS = """
             }
         }
     }
-
-    const emailM = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/);
-    if (emailM) usage.email = emailM[0];
 
     for (const pat of [/Claude\\s+(Max|Pro|Team|Enterprise|Free)/i, /(Max|Pro|Team|Enterprise)\\s+Plan/i]) {
         const m = text.match(pat);
@@ -189,7 +186,7 @@ final class ScraperService {
 
         let isAuth = json["isAuthenticated"] as? Bool ?? false
         guard isAuth else {
-            return ClaudeUsage(bars: [], isAuthenticated: false, plan: nil, email: nil)
+            return ClaudeUsage(bars: [], isAuthenticated: false, plan: nil)
         }
 
         let rawBars = json["bars"] as? [[String: Any]] ?? []
@@ -206,8 +203,7 @@ final class ScraperService {
         return ClaudeUsage(
             bars: bars,
             isAuthenticated: true,
-            plan: plan,
-            email: json["email"] as? String
+            plan: plan
         )
     }
 
