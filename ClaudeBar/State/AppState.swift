@@ -17,7 +17,18 @@ final class AppState: ObservableObject {
 
     init() {
         startTimer()
-        Task { await refresh() }
+        Task { await startupRefresh() }
+    }
+
+    /// On startup the Keychain prompt for session cookies may not be approved yet,
+    /// causing the first scrape to fail. Retry up to 3 times with short delays.
+    private func startupRefresh() async {
+        await refresh()
+        for _ in 0..<3 {
+            guard claudeUsage == nil || billingInfo == nil else { return }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await refresh()
+        }
     }
 
     // MARK: - Refresh
