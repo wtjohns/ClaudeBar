@@ -52,11 +52,13 @@ final class LoginWindowController: NSWindowController, WKNavigationDelegate {
 
     static func openPlatform(onSuccess: @escaping () -> Void) {
         let ctrl = LoginWindowController(
-            url: URL(string: "https://platform.claude.com/settings/billing")!,
+            url: URL(string: "https://platform.claude.com/login")!,
             title: "Login to Claude Platform",
             successPredicate: { url in
                 url.host?.contains("platform.claude.com") == true &&
-                url.path.contains("billing")
+                !url.path.contains("login") &&
+                !url.path.contains("auth") &&
+                !url.path.contains("signup")
             },
             onSuccess: onSuccess
         )

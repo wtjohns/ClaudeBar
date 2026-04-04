@@ -162,6 +162,11 @@ struct ContentView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.blue)
 
+            Button("Login to Platform") { state.openPlatformLogin() }
+                .buttonStyle(.plain)
+                .font(.system(size: 11))
+                .foregroundStyle(.blue)
+
             Spacer()
 
             Button("Settings") { openSettings() }
