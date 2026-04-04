@@ -6,8 +6,9 @@ A native macOS menu bar app that shows your Claude 5-hour session usage as a per
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> Swift/SwiftUI rewrite of [wtjohns/claude-usage-tool](https://github.com/wtjohns/claude-usage-tool) (Electron).
-> ~5MB vs ~300MB — no bundled Chromium.
+> Swift/SwiftUI rewrite of [wtjohns/claude-usage-tool](https://github.com/wtjohns/claude-usage-tool) (Electron),
+> which is itself a fork of [IgniteStudiosLtd/claude-usage-tool](https://github.com/IgniteStudiosLtd/claude-usage-tool).
+> ~672KB vs ~300MB — no bundled Chromium.
 
 ## Features
 
