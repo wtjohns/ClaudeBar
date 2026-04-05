@@ -101,7 +101,17 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
     }
 
     func load(url: URL) async -> String? {
-        await withCheckedContinuation { continuation in
+        // Force the persistent cookie store to finish loading from disk before
+        // making the first request. Without this, WKWebView sends the request
+        // before session cookies are available, gets redirected to /login, and
+        // the scrape silently fails on every cold start.
+        _ = await withCheckedContinuation { (cont: CheckedContinuation<[HTTPCookie], Never>) in
+            webView.configuration.websiteDataStore.httpCookieStore.getAllCookies {
+                cont.resume(returning: $0)
+            }
+        }
+
+        return await withCheckedContinuation { continuation in
             self.cont = continuation
             self.timeoutTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
