@@ -39,6 +39,8 @@ xattr -dr com.apple.quarantine /Applications/ClaudeBar.app
 
 > macOS will show "damaged and can't be opened" without step 3. This is Gatekeeper blocking unsigned apps downloaded from the internet — the command removes that restriction.
 
+> **Keychain prompt:** Because the app is unsigned, macOS will ask for Keychain access the first time it reads your Claude Code session token. Click **Always Allow** — if you click Allow Once, the prompt will reappear every 60 seconds when the app refreshes.
+
 ## Build from Source
 
 ```bash
