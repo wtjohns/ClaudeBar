@@ -10,8 +10,10 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     usageSection
-                    Divider().padding(.horizontal, 12)
-                    billingSection
+                    if state.billingInfo != nil || state.adminApiData != nil {
+                        Divider().padding(.horizontal, 12)
+                        billingSection
+                    }
                     if state.adminApiData != nil {
                         Divider().padding(.horizontal, 12)
                         adminApiSection
@@ -87,9 +89,7 @@ struct ContentView: View {
     private var billingSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader("API Credit Balance")
-            if state.isLoading && state.billingInfo == nil {
-                loadingRow
-            } else if let billing = state.billingInfo {
+            if let billing = state.billingInfo {
                 HStack {
                     if let balance = billing.creditBalance {
                         Text(String(format: "$%.2f", balance))
@@ -106,10 +106,6 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-            } else {
-                loginPrompt("Login to Platform for balance") {
-                    state.openPlatformLogin()
-                }
             }
         }
     }
@@ -134,19 +130,23 @@ struct ContentView: View {
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
             if !state.logs.isEmpty {
-                VStack(alignment: .leading, spacing: 1) {
-                    ForEach(state.logs.prefix(5)) { log in
-                        HStack(spacing: 4) {
-                            Text(log.timestamp, style: .time)
-                                .monospacedDigit()
-                            Text(log.message)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 1) {
+                        ForEach(state.logs) { log in
+                            HStack(spacing: 4) {
+                                Text(log.timestamp, style: .time)
+                                    .monospacedDigit()
+                                Text(log.message)
+                            }
+                            .font(.system(size: 8))
+                            .foregroundStyle(.secondary)
                         }
-                        .font(.system(size: 8))
-                        .foregroundStyle(.secondary)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 2)
                 }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 2)
+                .frame(height: 60)
             }
         }
         .padding(.top, 4)
@@ -157,15 +157,19 @@ struct ContentView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Button("Login to Claude") { state.openClaudeLogin() }
-                .buttonStyle(.plain)
-                .font(.system(size: 11))
-                .foregroundStyle(.blue)
+            if state.claudeUsage?.isAuthenticated != true {
+                Button("Login to Claude") { state.openClaudeLogin() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.blue)
+            }
 
-            Button("Login to Platform") { state.openPlatformLogin() }
-                .buttonStyle(.plain)
-                .font(.system(size: 11))
-                .foregroundStyle(.blue)
+            if state.billingInfo == nil {
+                Button("Connect Platform") { state.openPlatformLogin() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 

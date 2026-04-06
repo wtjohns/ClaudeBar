@@ -16,6 +16,9 @@ final class AppState: ObservableObject {
     private var timer: Timer?
 
     init() {
+        scraper.logger = { [weak self] msg in
+            Task { @MainActor in self?.addLog(msg) }
+        }
         startTimer()
         Task { await startupRefresh() }
     }
@@ -38,14 +41,10 @@ final class AppState: ObservableObject {
         isLoading = true
         addLog("Refreshing…")
 
-        async let usageTask = scraper.scrapeUsage()
-        async let billingTask = scraper.scrapeBilling()
-
-        let (usage, billing) = await (usageTask, billingTask)
+        // Fetch usage first — it drives the tray title
+        let usage = await scraper.scrapeUsage()
         claudeUsage = usage
-        billingInfo = billing
 
-        // Tray title from scraped bars, fall back to OAuth API
         if let bars = usage?.bars, !bars.isEmpty, usage?.isAuthenticated == true {
             let bar = bars.first(where: {
                 $0.label.lowercased().contains("current session") ||
@@ -53,10 +52,8 @@ final class AppState: ObservableObject {
             }) ?? bars[0]
             trayTitle = "\(Int(bar.percentage))%"
         } else if usage?.isAuthenticated == false {
-            // Scrape reached the page but session is expired — skip OAuth, signal login needed
             trayTitle = "?"
         } else {
-            // Scrape returned nil (network/timeout) — try OAuth fallback
             let oauthTitle = await oauth.getFiveHourUtilization()
             trayTitle = oauthTitle == "–" ? "?" : oauthTitle
         }
@@ -64,11 +61,20 @@ final class AppState: ObservableObject {
         let authStatus = usage.map { $0.isAuthenticated ? "authed" : "unauthed" } ?? "nil"
         addLog("Usage: \(usage?.bars.count ?? 0) bars (\(authStatus)), tray=\(trayTitle)")
 
-        if let billing {
-            if let balance = billing.creditBalance {
-                addLog(String(format: "Billing: $%.2f", balance))
-            } else {
-                addLog("Billing: no balance data")
+        // Billing is secondary — fetch independently so a timeout doesn't delay the tray
+        Task {
+            let billing = await scraper.scrapeBilling()
+            await MainActor.run {
+                billingInfo = billing
+                if let billing {
+                    if let balance = billing.creditBalance {
+                        addLog(String(format: "Billing: $%.2f", balance))
+                    } else {
+                        addLog("Billing: no balance data")
+                    }
+                } else {
+                    addLog("Billing: failed/timeout")
+                }
             }
         }
 
@@ -90,7 +96,7 @@ final class AppState: ObservableObject {
 
     func addLog(_ message: String) {
         logs.insert(LogEntry(message: message), at: 0)
-        if logs.count > 20 { logs = Array(logs.prefix(20)) }
+        if logs.count > 50 { logs = Array(logs.prefix(50)) }
     }
 
     // MARK: - Auto-refresh

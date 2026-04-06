@@ -97,6 +97,8 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
     // (and its session cookies) are fully accessible.
     private var hostWindow: NSWindow?
 
+    var log: (String) -> Void = { _ in }
+
     init(js: String) {
         let cfg = WKWebViewConfiguration()
         cfg.websiteDataStore = .default()      // persistent session = stays logged in
@@ -120,20 +122,19 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
     }
 
     func load(url: URL) async -> String? {
-        // Force the persistent cookie store to finish loading from disk before
-        // making the first request. Without this, WKWebView sends the request
-        // before session cookies are available, gets redirected to /login, and
-        // the scrape silently fails on every cold start.
-        _ = await withCheckedContinuation { (cont: CheckedContinuation<[HTTPCookie], Never>) in
+        let cookies = await withCheckedContinuation { (cont: CheckedContinuation<[HTTPCookie], Never>) in
             webView.configuration.websiteDataStore.httpCookieStore.getAllCookies {
                 cont.resume(returning: $0)
             }
         }
+        log("cookies=\(cookies.count) loading \(url.host ?? url.absoluteString)")
 
         return await withCheckedContinuation { continuation in
             self.cont = continuation
+            let timeoutNs: UInt64 = url.host?.contains("platform") == true ? 10_000_000_000 : 30_000_000_000
             self.timeoutTask = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                try? await Task.sleep(nanoseconds: timeoutNs)
+                self?.log("timeout")
                 self?.finish(nil)
             }
             webView.load(URLRequest(url: url))
@@ -145,21 +146,30 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
         Task { @MainActor [weak self] in
             guard let self else { return }
             let url = webView.url?.absoluteString ?? ""
+            log("didFinish url=\(url)")
             if url.contains("/login") || url.contains("/signup") {
+                log("redirected to login")
                 self.finish(nil); return
             }
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             let result = try? await webView.evaluateJavaScript(self.js)
+            log("js result=\(result != nil ? "ok" : "nil")")
             self.finish(result as? String)
         }
     }
 
     nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor [weak self] in self?.finish(nil) }
+        Task { @MainActor [weak self] in
+            self?.log("didFail: \(error.localizedDescription)")
+            self?.finish(nil)
+        }
     }
 
     nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor [weak self] in self?.finish(nil) }
+        Task { @MainActor [weak self] in
+            self?.log("didFailProvisional: \(error.localizedDescription)")
+            self?.finish(nil)
+        }
     }
 
     private func finish(_ value: String?) {
@@ -184,12 +194,15 @@ final class ScraperService {
     private var isScrapingUsage = false
     private var isScrapingBilling = false
 
+    var logger: ((String) -> Void)?
+
     func scrapeUsage() async -> ClaudeUsage? {
         guard !isScrapingUsage else { return nil }
         isScrapingUsage = true
         defer { isScrapingUsage = false; usageScraper = nil }
 
         let scraper = WebScraper(js: usageJS)
+        scraper.log = { [weak self] msg in self?.logger?("[usage] \(msg)") }
         usageScraper = scraper
         let raw = await scraper.load(url: URL(string: "https://claude.ai/settings/usage")!)
         return parseUsage(raw)
@@ -201,6 +214,7 @@ final class ScraperService {
         defer { isScrapingBilling = false; billingScraper = nil }
 
         let scraper = WebScraper(js: billingJS)
+        scraper.log = { [weak self] msg in self?.logger?("[billing] \(msg)") }
         billingScraper = scraper
         let raw = await scraper.load(url: URL(string: "https://platform.claude.com/settings/billing")!)
         return parseBilling(raw)
