@@ -91,13 +91,32 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
     private var resolved = false
     private var timeoutTask: Task<Void, Never>?
 
+    // macOS Tahoe tightened restrictions on WKWebView cookie store access for views
+    // that aren't attached to a real window. We host the web view in an offscreen
+    // hidden window for the duration of the scrape so the persistent data store
+    // (and its session cookies) are fully accessible.
+    private var hostWindow: NSWindow?
+
     init(js: String) {
         let cfg = WKWebViewConfiguration()
         cfg.websiteDataStore = .default()      // persistent session = stays logged in
-        self.webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 1024, height: 768), configuration: cfg)
+        let frame = CGRect(x: 0, y: 0, width: 1024, height: 768)
+        self.webView = WKWebView(frame: frame, configuration: cfg)
         self.js = js
         super.init()
         webView.navigationDelegate = self
+
+        // Attach to a real (but hidden, offscreen) window so macOS gives the
+        // web content process full access to the persistent cookie store.
+        let win = NSWindow(
+            contentRect: NSRect(x: -2000, y: -2000, width: 1024, height: 768),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        win.isReleasedWhenClosed = false
+        win.contentView?.addSubview(webView)
+        hostWindow = win
     }
 
     func load(url: URL) async -> String? {
@@ -149,6 +168,7 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
         timeoutTask?.cancel()
         cont?.resume(returning: value)
         cont = nil
+        hostWindow = nil   // releases the hidden window and its web content process
     }
 }
 

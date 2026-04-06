@@ -52,11 +52,17 @@ final class AppState: ObservableObject {
                 $0.label.lowercased().contains("session")
             }) ?? bars[0]
             trayTitle = "\(Int(bar.percentage))%"
+        } else if usage?.isAuthenticated == false {
+            // Scrape reached the page but session is expired — skip OAuth, signal login needed
+            trayTitle = "?"
         } else {
-            trayTitle = await oauth.getFiveHourUtilization()
+            // Scrape returned nil (network/timeout) — try OAuth fallback
+            let oauthTitle = await oauth.getFiveHourUtilization()
+            trayTitle = oauthTitle == "–" ? "?" : oauthTitle
         }
 
-        addLog("Usage: \(usage?.bars.count ?? 0) bars, tray=\(trayTitle)")
+        let authStatus = usage.map { $0.isAuthenticated ? "authed" : "unauthed" } ?? "nil"
+        addLog("Usage: \(usage?.bars.count ?? 0) bars (\(authStatus)), tray=\(trayTitle)")
 
         if let billing {
             if let balance = billing.creditBalance {
