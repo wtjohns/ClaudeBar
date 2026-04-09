@@ -107,6 +107,7 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
         self.js = js
         super.init()
         webView.navigationDelegate = self
+        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15"
 
         // Attach to a real (but hidden, offscreen) window so macOS gives the
         // web content process full access to the persistent cookie store.
@@ -138,6 +139,13 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
                 self?.finish(nil)
             }
             webView.load(URLRequest(url: url))
+        }
+    }
+
+    nonisolated func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        Task { @MainActor [weak self] in
+            let url = webView.url?.absoluteString ?? "?"
+            self?.log("didStart url=\(url)")
         }
     }
 

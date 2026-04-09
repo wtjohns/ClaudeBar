@@ -20,6 +20,7 @@ struct ContentView: View {
                     }
                 }
             }
+            .frame(minHeight: 200)
             Divider()
             logSection
             Divider()
