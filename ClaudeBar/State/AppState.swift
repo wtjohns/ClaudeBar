@@ -55,7 +55,11 @@ final class AppState: ObservableObject {
             trayTitle = "?"
         } else {
             let oauthTitle = await oauth.getFiveHourUtilization()
-            trayTitle = oauthTitle == "–" ? "?" : oauthTitle
+            if oauthTitle != "–" {
+                trayTitle = oauthTitle
+            } else {
+                addLog("Both scraper and OAuth failed — keeping last value (\(trayTitle))")
+            }
         }
 
         let authStatus = usage.map { $0.isAuthenticated ? "authed" : "unauthed" } ?? "nil"

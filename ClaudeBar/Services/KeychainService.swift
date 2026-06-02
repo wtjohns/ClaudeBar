@@ -21,6 +21,13 @@ final class KeychainService {
               let oauth = json["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String
         else { return nil }
+
+        // expiresAt is stored as milliseconds since epoch by the Claude Code CLI
+        if let expiresAt = oauth["expiresAt"] as? Double {
+            let seconds = expiresAt > 1e10 ? expiresAt / 1000 : expiresAt
+            if Date(timeIntervalSince1970: seconds) < Date() { return nil }
+        }
+
         return token
     }
 

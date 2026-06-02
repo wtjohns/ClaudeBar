@@ -48,6 +48,7 @@ private let usageJS = """
         }
     }
 
+
     for (const pat of [/Claude\\s+(Max|Pro|Team|Enterprise|Free)/i, /(Max|Pro|Team|Enterprise)\\s+Plan/i]) {
         const m = text.match(pat);
         if (m) { usage.plan = m[1]; break; }
@@ -98,6 +99,10 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
     private var hostWindow: NSWindow?
 
     var log: (String) -> Void = { _ in }
+    /// If set, called after each JS eval. Return true to wait `retryDelayNs` and try again.
+    var shouldRetry: ((String?) -> Bool)?
+    var maxRetries = 3
+    var retryDelayNs: UInt64 = 5_000_000_000
 
     init(js: String) {
         let cfg = WKWebViewConfiguration()
@@ -135,8 +140,9 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
             let timeoutNs: UInt64 = url.host?.contains("platform") == true ? 10_000_000_000 : 30_000_000_000
             self.timeoutTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: timeoutNs)
-                self?.log("timeout")
-                self?.finish(nil)
+                guard let self, !self.resolved else { return }
+                self.log("timeout")
+                self.finish(nil)
             }
             webView.load(URLRequest(url: url))
         }
@@ -160,9 +166,16 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
                 self.finish(nil); return
             }
             try? await Task.sleep(nanoseconds: 3_000_000_000)
-            let result = try? await webView.evaluateJavaScript(self.js)
-            log("js result=\(result != nil ? "ok" : "nil")")
-            self.finish(result as? String)
+            var jsResult = try? await webView.evaluateJavaScript(self.js)
+            var attempt = 0
+            while let check = shouldRetry, check(jsResult as? String), attempt < maxRetries, !resolved {
+                attempt += 1
+                log("js: no data yet, retry \(attempt)/\(maxRetries)…")
+                try? await Task.sleep(nanoseconds: retryDelayNs)
+                jsResult = try? await webView.evaluateJavaScript(self.js)
+            }
+            log("js result=\(jsResult != nil ? "ok" : "nil")")
+            self.finish(jsResult as? String)
         }
     }
 
@@ -211,6 +224,14 @@ final class ScraperService {
 
         let scraper = WebScraper(js: usageJS)
         scraper.log = { [weak self] msg in self?.logger?("[usage] \(msg)") }
+        scraper.shouldRetry = { raw in
+            guard let raw, let data = raw.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let isAuth = json["isAuthenticated"] as? Bool, isAuth,
+                  let bars = json["bars"] as? [[String: Any]]
+            else { return false }
+            return bars.isEmpty
+        }
         usageScraper = scraper
         let raw = await scraper.load(url: URL(string: "https://claude.ai/settings/usage")!)
         return parseUsage(raw)

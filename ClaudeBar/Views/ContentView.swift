@@ -34,7 +34,7 @@ struct ContentView: View {
 
     private var header: some View {
         HStack {
-            Text("Claude \"\(planName)\" Plan Usage")
+            Text("Claude Usage")
                 .font(.system(size: 13, weight: .semibold))
             Spacer()
             if let updated = state.lastUpdated {
@@ -55,10 +55,6 @@ struct ContentView: View {
         .padding(.vertical, 8)
     }
 
-    private var planName: String {
-        let valid: Set<String> = ["Max", "Pro", "Team", "Enterprise", "Free"]
-        return (state.claudeUsage?.plan).flatMap { valid.contains($0) ? $0 : nil } ?? "Max"
-    }
 
     // MARK: - Usage Section
 
