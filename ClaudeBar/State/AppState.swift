@@ -13,6 +13,9 @@ final class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var lastUpdated: Date?
     @Published var logs: [LogEntry] = []
+    @Published var availableUpdate: AppUpdate?
+    /// Shown in the footer/Settings while checking or installing; nil when idle
+    @Published var updateStatus: String?
 
     // MARK: Display settings (persisted). Disabling a section also stops fetching its data.
 
@@ -36,7 +39,9 @@ final class AppState: ObservableObject {
     private let oauth = OAuthService()
     private let codex = CodexService()
     private let adminApi = AdminApiService()
+    private let updater = UpdateService()
     private var timer: Timer?
+    private var updateTimer: Timer?
     private var billingTask: Task<Void, Never>?
 
     init() {
@@ -59,6 +64,7 @@ final class AppState: ObservableObject {
         codex.log = { [weak self] msg in self?.addLog("[codex] \(msg)") }
         startTimer()
         Task { await startupRefresh() }
+        startUpdateChecks()
     }
 
     var isCodexSignedIn: Bool { codex.isSignedIn }
@@ -211,6 +217,48 @@ final class AppState: ObservableObject {
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
+        }
+    }
+
+    // MARK: - Updates
+
+    var currentVersion: String { updater.currentVersion }
+
+    private func startUpdateChecks() {
+        Task {
+            try? await Task.sleep(nanoseconds: 10_000_000_000)   // let usage load first
+            await checkForUpdates()
+        }
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 6 * 60 * 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in await self?.checkForUpdates() }
+        }
+    }
+
+    /// Background checks stay quiet on failure; user-initiated ones report the result.
+    func checkForUpdates(userInitiated: Bool = false) async {
+        if userInitiated { updateStatus = "Checking…" }
+        do {
+            availableUpdate = try await updater.check()
+            if let update = availableUpdate {
+                addLog("Update available: \(update.version)")
+                if userInitiated { updateStatus = nil }
+            } else if userInitiated {
+                updateStatus = "ClaudeBar \(currentVersion) is up to date"
+            }
+        } catch {
+            addLog("Update check failed: \(error.localizedDescription)")
+            if userInitiated { updateStatus = "Update check failed" }
+        }
+    }
+
+    func installUpdate() async {
+        guard let update = availableUpdate else { return }
+        do {
+            try await updater.install(update) { [weak self] message in self?.updateStatus = message }
+        } catch {
+            addLog("Update failed: \(error.localizedDescription)")
+            updateStatus = "Update failed — opening release page"
+            NSWorkspace.shared.open(update.releasePage)
         }
     }
 

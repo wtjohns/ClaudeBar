@@ -78,6 +78,30 @@ struct SettingsView: View {
 
             Divider()
 
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ClaudeBar \(state.currentVersion)")
+                        .font(.system(size: 13, weight: .medium))
+                    if let update = state.availableUpdate {
+                        Text("Version \(update.version) is available")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.blue)
+                    } else if let status = state.updateStatus {
+                        Text(status)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                if state.availableUpdate != nil {
+                    Button("Install Update") { Task { await state.installUpdate() } }
+                } else {
+                    Button("Check for Updates") { Task { await state.checkForUpdates(userInitiated: true) } }
+                }
+            }
+
+            Divider()
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Anthropic Admin API Key")
                     .font(.system(size: 13, weight: .medium))

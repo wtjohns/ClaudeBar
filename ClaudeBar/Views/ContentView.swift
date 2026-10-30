@@ -207,6 +207,19 @@ struct ContentView: View {
 
             Spacer()
 
+            if let status = state.updateStatus, state.availableUpdate != nil {
+                Text(status)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            } else if let update = state.availableUpdate {
+                Button("Update to \(update.version)") {
+                    Task { await state.installUpdate() }
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.blue)
+            }
+
             Button("Settings") { openSettings() }
                 .buttonStyle(.plain)
                 .font(.system(size: 11))

@@ -15,6 +15,7 @@
 		6A4713EC1138CD9E966154EA /* CodexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22174ACF2B2306EA5385B949 /* CodexService.swift */; };
 		916FA439503CE7F2D04C7792 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA9B132384496036D3E9349 /* AppState.swift */; };
 		98C39106549B5333E50DC0B4 /* OAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7B0A36E88396DB8FAA658B /* OAuthService.swift */; };
+		A67D3B99817F6CC20DE88999 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28BE87B72885F3A528921DE /* UpdateService.swift */; };
 		B370453F9598A14564939E58 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3886CA8C86B535BB48261C12 /* KeychainService.swift */; };
 		B9C44247DA1B6F1EDFA15C58 /* LoginWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0DCE07C4374E9F073B69CB /* LoginWindowController.swift */; };
 		D2592E9B6565DCFBC71769F5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48D2EF2E434694289362E89F /* Assets.xcassets */; };
@@ -37,6 +38,7 @@
 		DC828E1C7AAF6FC78BBD5C10 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DFC6ABE422793D8BA109AA3C /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		F0B6013F37A8E68B70D4FE0E /* AdminApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminApiService.swift; sourceTree = "<group>"; };
+		F28BE87B72885F3A528921DE /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
 		FEA9B132384496036D3E9349 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -60,6 +62,7 @@
 				3886CA8C86B535BB48261C12 /* KeychainService.swift */,
 				7B7B0A36E88396DB8FAA658B /* OAuthService.swift */,
 				149F3FA09515A903C468DFB1 /* ScraperService.swift */,
+				F28BE87B72885F3A528921DE /* UpdateService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -212,6 +215,7 @@
 				98C39106549B5333E50DC0B4 /* OAuthService.swift in Sources */,
 				060C3DF63FB3CDB80A63B497 /* ScraperService.swift in Sources */,
 				274BF94D09F5C95B3D6C6ACB /* SettingsWindowController.swift in Sources */,
+				A67D3B99817F6CC20DE88999 /* UpdateService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
