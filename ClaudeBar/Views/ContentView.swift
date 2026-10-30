@@ -7,22 +7,30 @@ struct ContentView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            ScrollView {
-                VStack(spacing: 0) {
+            // Plain stack rather than a ScrollView: content is bounded, and a ScrollView in a
+            // MenuBarExtra either collapses (macOS Tahoe) or clips at a fixed height.
+            VStack(spacing: 0) {
+                if state.showClaude {
                     usageSection
-                    if state.billingInfo != nil || state.adminApiData != nil {
-                        Divider().padding(.horizontal, 12)
-                        billingSection
-                    }
-                    if state.adminApiData != nil {
-                        Divider().padding(.horizontal, 12)
-                        adminApiSection
-                    }
+                }
+                if state.showCodex {
+                    if state.showClaude { Divider().padding(.horizontal, 12) }
+                    codexSection
+                }
+                if state.showBilling, state.billingInfo != nil || state.adminApiData != nil {
+                    Divider().padding(.horizontal, 12)
+                    billingSection
+                }
+                if state.showBilling, state.adminApiData != nil {
+                    Divider().padding(.horizontal, 12)
+                    adminApiSection
                 }
             }
-            .frame(minHeight: 200)
-            Divider()
-            logSection
+            .fixedSize(horizontal: false, vertical: true)
+            if state.showLog {
+                Divider()
+                logSection
+            }
             Divider()
             footer
         }
@@ -34,7 +42,7 @@ struct ContentView: View {
 
     private var header: some View {
         HStack {
-            Text("Claude Usage")
+            Text(state.showCodex ? "Usage" : "Claude Usage")
                 .font(.system(size: 13, weight: .semibold))
             Spacer()
             if let updated = state.lastUpdated {
@@ -60,7 +68,7 @@ struct ContentView: View {
 
     private var usageSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionHeader("Usage")
+            sectionHeader("Claude")
             if state.isLoading && state.claudeUsage == nil {
                 loadingRow
             } else if state.claudeUsage?.isAuthenticated == false || state.claudeUsage == nil {
@@ -73,6 +81,35 @@ struct ContentView: View {
                 }
             } else {
                 Text("No usage data")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+            }
+        }
+    }
+
+    // MARK: - Codex Section
+
+    private var codexSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionHeader(state.codexUsage?.plan.map { "Codex · \($0.capitalized)" } ?? "Codex")
+            if let usage = state.codexUsage {
+                ForEach(usage.bars) { bar in
+                    UsageBarRow(bar: bar)
+                }
+                if let asOf = usage.snapshotDate {
+                    // Fallback data from Codex's session log, not a live reading
+                    Text("From Codex session log · as of \(asOf.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 6)
+                }
+            } else if state.isLoading {
+                loadingRow
+            } else {
+                Text(state.isCodexSignedIn ? "Codex usage unavailable" : "Sign in to Codex to see usage")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
@@ -154,14 +191,14 @@ struct ContentView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            if state.claudeUsage?.isAuthenticated != true {
+            if state.showClaude, state.claudeUsage?.isAuthenticated != true {
                 Button("Login to Claude") { state.openClaudeLogin() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11))
                     .foregroundStyle(.blue)
             }
 
-            if state.billingInfo == nil {
+            if state.showBilling, state.billingInfo == nil {
                 Button("Connect Platform") { state.openPlatformLogin() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11))
@@ -222,7 +259,7 @@ struct ContentView: View {
     }
 
     private func openSettings() {
-        SettingsWindowController.open()
+        SettingsWindowController.open(state: state)
     }
 }
 
@@ -280,7 +317,7 @@ struct AdminApiView: View {
 
             // Cost + credit
             HStack {
-                Text(String(format: "Cost: $%.4f", data.cost.totalCost))
+                Text(String(format: "Cost: $%.2f", data.cost.totalCost))
                     .font(.system(size: 12, design: .monospaced))
                 if let credit = data.creditBalance {
                     Spacer()

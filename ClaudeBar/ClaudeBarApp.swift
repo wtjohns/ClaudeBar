@@ -9,8 +9,13 @@ struct ClaudeBarApp: App {
             ContentView()
                 .environmentObject(appState)
         } label: {
-            Text(appState.trayTitle)
-                .monospacedDigit()
+            if let image = appState.trayImage {
+                Image(nsImage: image)
+                    .accessibilityLabel(appState.trayTitle)
+            } else {
+                Text(appState.trayTitle)
+                    .monospacedDigit()
+            }
         }
         .menuBarExtraStyle(.window)
     }

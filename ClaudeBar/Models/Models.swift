@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Usage
 
-struct UsageBar: Identifiable {
+struct UsageBar: Identifiable, Sendable {
     let id = UUID()
     let label: String
     let percentage: Double
@@ -13,6 +13,22 @@ struct ClaudeUsage {
     let bars: [UsageBar]
     let isAuthenticated: Bool
     let plan: String?
+}
+
+struct CodexUsage: Sendable {
+    let bars: [UsageBar]
+    let plan: String?
+    let limitReached: Bool
+    /// nil when fetched live; otherwise when the session-log snapshot was written
+    let snapshotDate: Date?
+}
+
+/// "Resets at 11:50 AM" for today, otherwise "Resets Wed 1:00 AM"
+func resetDescription(for date: Date) -> String {
+    if Calendar.current.isDateInToday(date) {
+        return "Resets at \(date.formatted(date: .omitted, time: .shortened))"
+    }
+    return "Resets \(date.formatted(.dateTime.weekday(.abbreviated).hour().minute()))"
 }
 
 // MARK: - Billing

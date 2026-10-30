@@ -2,7 +2,10 @@ import AppKit
 import WebKit
 
 /// Manages a visible WKWebView login window for claude.ai or platform.claude.com.
-final class LoginWindowController: NSWindowController, WKNavigationDelegate {
+final class LoginWindowController: NSWindowController, WKNavigationDelegate, NSWindowDelegate {
+    /// Keeps open login windows alive; each removes itself in `windowWillClose`.
+    private static var openControllers: [LoginWindowController] = []
+
     private let webView: WKWebView
     private let successPredicate: (URL) -> Bool
     private var onSuccess: (() -> Void)?
@@ -26,6 +29,8 @@ final class LoginWindowController: NSWindowController, WKNavigationDelegate {
         self.successPredicate = successPredicate
         self.onSuccess = onSuccess
         super.init(window: window)
+        window.isReleasedWhenClosed = false
+        window.delegate = self
         wv.navigationDelegate = self
         wv.load(URLRequest(url: url))
     }
@@ -45,9 +50,7 @@ final class LoginWindowController: NSWindowController, WKNavigationDelegate {
             },
             onSuccess: onSuccess
         )
-        ctrl.showWindow(nil)
-        // Retain until closed
-        objc_setAssociatedObject(ctrl.window!, &AssociatedKey.controller, ctrl, .OBJC_ASSOCIATION_RETAIN)
+        present(ctrl)
     }
 
     static func openPlatform(onSuccess: @escaping () -> Void) {
@@ -62,8 +65,22 @@ final class LoginWindowController: NSWindowController, WKNavigationDelegate {
             },
             onSuccess: onSuccess
         )
+        present(ctrl)
+    }
+
+    private static func present(_ ctrl: LoginWindowController) {
+        openControllers.append(ctrl)
         ctrl.showWindow(nil)
-        objc_setAssociatedObject(ctrl.window!, &AssociatedKey.controller, ctrl, .OBJC_ASSOCIATION_RETAIN)
+        ctrl.window?.makeKeyAndOrderFront(nil)
+        // Menu bar (LSUIElement) apps aren't frontmost, so the window would open behind others
+        NSApp.activateCompat()
+    }
+
+    // MARK: - NSWindowDelegate
+
+    func windowWillClose(_ notification: Notification) {
+        webView.navigationDelegate = nil
+        Self.openControllers.removeAll { $0 === self }
     }
 
     // MARK: - WKNavigationDelegate
@@ -78,8 +95,4 @@ final class LoginWindowController: NSWindowController, WKNavigationDelegate {
             }
         }
     }
-}
-
-private enum AssociatedKey {
-    static var controller = "LoginWindowController"
 }

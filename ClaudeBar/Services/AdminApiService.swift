@@ -30,8 +30,8 @@ final class AdminApiService {
         }
         let sortedModels = byModel.sorted { $0.value > $1.value }.map { (model: $0.key, tokens: $0.value) }
 
-        // Aggregate cost
-        let totalCost = c.data.flatMap(\.results).compactMap { Double($0.amount) }.reduce(0, +)
+        // Aggregate cost — the API reports amounts in cents as decimal strings
+        let totalCost = c.data.flatMap(\.results).compactMap { Double($0.amount) }.reduce(0, +) / 100
 
         // Credit balance
         let creditBalance = cr.flatMap { Double($0.availableCredit) }

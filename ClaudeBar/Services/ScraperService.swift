@@ -19,33 +19,32 @@ private let usageJS = """
     }
 
     const lines = text.split('\\n').map(l => l.trim()).filter(Boolean);
-    const labels = ['Current session','All models','Sonnet only','Extra usage',
-                    'Weekly limit','Daily limit','Monthly limit','Standard','Advanced'];
+    const knownLabels = ['current session','all models','sonnet only','opus only','extra usage',
+                         'weekly limit','daily limit','monthly limit','standard','advanced'];
+    const isReset = l => /^resets?\\b/i.test(l);
 
+    // Anchor on each "N% used" line, then look back for its label. Known labels win;
+    // otherwise take the nearest preceding line that isn't a reset line, so a renamed
+    // label on claude.ai doesn't silently drop the bar.
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (!labels.some(l => l.toLowerCase() === line.toLowerCase())) continue;
-        let percentage = 0, resetInfo = '';
-        for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
-            const nl = lines[j];
-            if (nl.toLowerCase().startsWith('reset')) resetInfo = nl;
-            const m = nl.match(/(\\d+)%\\s*used/i);
-            if (m) { percentage = parseInt(m[1], 10); break; }
+        const m = lines[i].match(/(\\d+)%\\s*used/i);
+        if (!m) continue;
+        let label = null, nearest = null, resetInfo = '';
+        for (let j = i - 1; j >= Math.max(0, i - 6); j--) {
+            const l = lines[j];
+            if (/\\d+%\\s*used/i.test(l)) break;   // previous bar
+            if (isReset(l)) { if (!resetInfo) resetInfo = l; continue; }
+            if (knownLabels.includes(l.toLowerCase())) { label = l; break; }
+            if (!nearest) nearest = l;
         }
-        usage.bars.push({ label: line, percentage, resetInfo });
-    }
-
-    // Fallback: grab any "X% used" if no bars found
-    if (usage.bars.length === 0) {
-        let idx = 0;
-        const fallback = ['Current Session','All models','Sonnet only','Extra usage'];
-        for (const m of text.matchAll(/(\\d+)%\\s*used/gi)) {
-            const pct = parseInt(m[1], 10);
-            if (pct >= 0 && pct <= 100 && !usage.bars.some(b => b.percentage === pct)) {
-                usage.bars.push({ label: fallback[idx] || 'Usage ' + (idx+1), percentage: pct, resetInfo: '' });
-                idx++;
-            }
+        for (let j = i + 1; !resetInfo && j < Math.min(i + 3, lines.length); j++) {
+            if (isReset(lines[j])) resetInfo = lines[j];
         }
+        usage.bars.push({
+            label: label || nearest || 'Usage ' + (usage.bars.length + 1),
+            percentage: parseInt(m[1], 10),
+            resetInfo
+        });
     }
 
 
@@ -137,7 +136,7 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
 
         return await withCheckedContinuation { continuation in
             self.cont = continuation
-            let timeoutNs: UInt64 = url.host?.contains("platform") == true ? 10_000_000_000 : 30_000_000_000
+            let timeoutNs: UInt64 = url.host?.contains("platform") == true ? 25_000_000_000 : 30_000_000_000
             self.timeoutTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: timeoutNs)
                 guard let self, !self.resolved else { return }
@@ -199,6 +198,8 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
         timeoutTask?.cancel()
         cont?.resume(returning: value)
         cont = nil
+        webView.stopLoading()   // a timed-out page would otherwise keep loading
+        webView.removeFromSuperview()
         hostWindow = nil   // releases the hidden window and its web content process
     }
 }
@@ -244,6 +245,16 @@ final class ScraperService {
 
         let scraper = WebScraper(js: billingJS)
         scraper.log = { [weak self] msg in self?.logger?("[billing] \(msg)") }
+        // The billing SPA can render the balance after didFinish; retry while it's absent
+        scraper.shouldRetry = { raw in
+            guard let raw, let data = raw.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  json["needsLogin"] as? Bool != true
+            else { return false }
+            return json["creditBalance"] is NSNull || json["creditBalance"] == nil
+        }
+        scraper.maxRetries = 2
+        scraper.retryDelayNs = 3_000_000_000
         billingScraper = scraper
         let raw = await scraper.load(url: URL(string: "https://platform.claude.com/settings/billing")!)
         return parseBilling(raw)
