@@ -7,16 +7,28 @@ final class KeychainService {
 
     // MARK: - Claude Code OAuth token (written by Claude Code CLI)
 
-    func readClaudeOAuthToken() -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "Claude Code-credentials",
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data,
+    private let claudeCredentialsService = "Claude Code-credentials"
+
+    /// Claude Code writes its credentials with /usr/bin/security, which leaves that tool on the
+    /// item's access list. Reading through it avoids a Keychain prompt; reading directly would
+    /// prompt whenever ClaudeBar's ad-hoc signature changes, since macOS only trusts the exact
+    /// build that was last allowed.
+    func readClaudeOAuthToken() async -> String? {
+        let data: Data?
+        if let viaTool = await readViaSecurityTool(service: claudeCredentialsService) {
+            data = viaTool
+        } else {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: claudeCredentialsService,
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne
+            ]
+            var result: AnyObject?
+            data = SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess ? result as? Data : nil
+        }
+
+        guard let data,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = json["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String
@@ -29,6 +41,22 @@ final class KeychainService {
         }
 
         return token
+    }
+
+    private func readViaSecurityTool(service: String) async -> Data? {
+        await withCheckedContinuation { cont in
+            let process = Process()
+            let output = Pipe()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+            process.arguments = ["find-generic-password", "-s", service, "-w"]
+            process.standardOutput = output
+            process.standardError = FileHandle.nullDevice
+            process.terminationHandler = { p in
+                let data = output.fileHandleForReading.readDataToEndOfFile()
+                cont.resume(returning: p.terminationStatus == 0 && !data.isEmpty ? data : nil)
+            }
+            do { try process.run() } catch { cont.resume(returning: nil) }
+        }
     }
 
     // MARK: - Admin API key (stored by ClaudeBar)

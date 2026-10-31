@@ -45,7 +45,7 @@ ClaudeBar appears in your menu bar with no Dock icon.
 
 ClaudeBar checks for new releases every few hours. When one is available, an **Update to x.y.z** button appears in the popover footer (or use **Settings → Check for Updates**). Updates are downloaded by the app itself, verified against the release checksum, and installed in place — no Gatekeeper approval needed after the first install.
 
-> **Keychain prompt:** Because the app isn't signed with an Apple developer certificate, macOS asks for Keychain access the first time it reads your Claude Code session token (and again after each update). Click **Always Allow** — if you click Allow Once, the prompt will reappear on every refresh.
+> **Keychain prompt:** ClaudeBar reads Claude Code's token through macOS's built-in `security` tool, which Claude Code already trusts, so you shouldn't see a Keychain prompt for it. If you save an Admin API key, macOS may ask once after each update to read it — click **Always Allow**.
 
 ## Build from Source
 

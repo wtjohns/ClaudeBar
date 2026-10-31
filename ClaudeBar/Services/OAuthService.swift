@@ -20,7 +20,7 @@ final class OAuthService {
     }
 
     private func fetchUsage(retryOnUnauthorized: Bool) async -> ClaudeUsage? {
-        if cachedToken == nil { cachedToken = KeychainService.shared.readClaudeOAuthToken() }
+        if cachedToken == nil { cachedToken = await KeychainService.shared.readClaudeOAuthToken() }
         guard let token = cachedToken,
               let url = URL(string: "https://api.anthropic.com/api/oauth/usage")
         else { return nil }
