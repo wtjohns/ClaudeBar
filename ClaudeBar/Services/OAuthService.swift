@@ -14,13 +14,22 @@ final class OAuthService {
 
     // Cached so we don't hit the Keychain every refresh; re-read on 401.
     private var cachedToken: String?
+    /// After a failed token read (missing or expired), don't spawn `security` again until then.
+    private var nextTokenRead = Date.distantPast
+    private static let tokenRereadInterval: TimeInterval = 10 * 60
 
     func fetchUsage() async -> ClaudeUsage? {
         await fetchUsage(retryOnUnauthorized: true)
     }
 
     private func fetchUsage(retryOnUnauthorized: Bool) async -> ClaudeUsage? {
-        if cachedToken == nil { cachedToken = await KeychainService.shared.readClaudeOAuthToken() }
+        if cachedToken == nil {
+            guard Date() >= nextTokenRead else { return nil }
+            cachedToken = await KeychainService.shared.readClaudeOAuthToken()
+            if cachedToken == nil {
+                nextTokenRead = Date().addingTimeInterval(Self.tokenRereadInterval)
+            }
+        }
         guard let token = cachedToken,
               let url = URL(string: "https://api.anthropic.com/api/oauth/usage")
         else { return nil }
@@ -38,12 +47,18 @@ final class OAuthService {
         if status == 401 {
             // Claude Code refreshed the token since we cached it
             cachedToken = nil
-            return retryOnUnauthorized ? await fetchUsage(retryOnUnauthorized: false) : nil
+            if retryOnUnauthorized { return await fetchUsage(retryOnUnauthorized: false) }
+            nextTokenRead = Date().addingTimeInterval(Self.tokenRereadInterval)
+            return nil
         }
         guard status == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else { return nil }
+        return Self.parseUsage(json)
+    }
 
+    /// Shared with ClaudeWebService: claude.ai's usage endpoint returns the same shape.
+    static func parseUsage(_ json: [String: Any]) -> ClaudeUsage? {
         let bars = Self.windows.compactMap { key, label -> UsageBar? in
             guard let window = json[key] as? [String: Any],
                   let utilization = (window["utilization"] as? NSNumber)?.doubleValue

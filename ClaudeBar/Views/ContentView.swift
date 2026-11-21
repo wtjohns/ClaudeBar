@@ -36,6 +36,7 @@ struct ContentView: View {
         }
         .frame(width: 320)
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear { state.popoverOpened() }
     }
 
     // MARK: - Header
@@ -51,7 +52,7 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             }
             Button {
-                Task { await state.refresh() }
+                Task { await state.refresh(userInitiated: true) }
             } label: {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 11))

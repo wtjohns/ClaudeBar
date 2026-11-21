@@ -111,7 +111,7 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
         self.js = js
         super.init()
         webView.navigationDelegate = self
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15"
+        webView.customUserAgent = ScraperService.userAgent
 
         // Attach to a real (but hidden, offscreen) window so macOS gives the
         // web content process full access to the persistent cookie store.
@@ -210,6 +210,39 @@ private final class WebScraper: NSObject, WKNavigationDelegate {
 final class ScraperService {
     static let shared = ScraperService()
     private init() {}
+
+    /// Shared by the scrapers and ClaudeWebService so Cloudflare sees one consistent client.
+    nonisolated static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15"
+
+    /// Reads unexpired cookies for `domain` from WebKit's persistent store without loading
+    /// a page. Hosted in a hidden window for the same macOS Tahoe reason as WebScraper.
+    func cookies(forDomain domain: String) async -> [HTTPCookie] {
+        let cfg = WKWebViewConfiguration()
+        cfg.websiteDataStore = .default()
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 10, height: 10), configuration: cfg)
+        let window = NSWindow(
+            contentRect: NSRect(x: -2000, y: -2000, width: 10, height: 10),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.contentView?.addSubview(webView)
+
+        let all = await withCheckedContinuation { (cont: CheckedContinuation<[HTTPCookie], Never>) in
+            webView.configuration.websiteDataStore.httpCookieStore.getAllCookies {
+                cont.resume(returning: $0)
+            }
+        }
+        webView.removeFromSuperview()
+        withExtendedLifetime(window) {}
+
+        let now = Date()
+        return all.filter { cookie in
+            let host = cookie.domain.hasPrefix(".") ? String(cookie.domain.dropFirst()) : cookie.domain
+            return host == domain && (cookie.expiresDate.map { $0 > now } ?? true)
+        }
+    }
 
     private var usageScraper: WebScraper?
     private var billingScraper: WebScraper?

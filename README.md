@@ -15,9 +15,10 @@ A native macOS menu bar app that shows your Claude (and optionally Codex) usage 
 - **Menu bar percentage** — shows your 5-hour session usage (e.g. `62%`) directly in the menu bar; with Codex enabled, a compact two-line `C 62%` / `X 18%`
 - **Usage bars** — Claude session and weekly limits with reset timers
 - **Codex usage** — ChatGPT plan 5-hour and weekly Codex limits (uses your existing Codex sign-in)
-- **API credit balance** — scraped from platform.claude.com
+- **API credit balance** — read from platform.claude.com every 30 minutes, and when you open the popover
 - **Admin API tab** — 30-day token usage, cost breakdown by model, and credit balance (requires Admin API key)
-- **Auto-refresh** — updates every 60 seconds
+- **Auto-refresh** — updates every 60 seconds, pauses while your Mac is asleep or locked
+- **Light on battery** — each refresh is a few small HTTPS requests; no hidden web pages loading in the background
 - **Native login windows** — log in to claude.ai and platform.claude.com without leaving the app
 - **Persistent sessions** — stays logged in across restarts
 - **Configurable** — show or hide Claude, Codex, credit balance and the debug log in Settings
@@ -76,9 +77,13 @@ For the 30-day usage and cost breakdown, you need an Anthropic Admin API key:
 
 ## How It Works
 
-ClaudeBar uses `WKWebView` with a persistent session store to scrape your usage data from claude.ai and platform.claude.com — the same approach as the Electron version, just native. Your session cookies persist across restarts so you only need to log in once.
+You log in to claude.ai and platform.claude.com once, in ClaudeBar's own login windows (`WKWebView` with a persistent session store), so your sessions survive restarts.
 
-**Claude:** usage comes from the Anthropic OAuth usage API, using the token Claude Code stores in your Keychain. If Claude Code isn't signed in, it falls back to scraping claude.ai/settings/usage.
+**Claude:** each refresh is a single request to claude.ai's usage API, using the session cookie from that login. WebKit is only used to read the cookie (at launch, after logging in, or after the session expires), never to load a page. If that fails, ClaudeBar tries the Anthropic OAuth usage API with the token Claude Code stores in your Keychain, and as a last resort loads claude.ai/settings/usage in a hidden web view (at most every 10 minutes).
+
+**Credit balance:** there's no JSON endpoint for this, so it's still read from the platform.claude.com billing page in a hidden web view, but only every 30 minutes, and when you open the popover if it's more than 5 minutes old.
+
+**Battery:** refreshes pause while your Mac is asleep, its display is off, the screen is locked, or you've switched users, and resume when you're back. Failed refreshes back off (1, 2, 5, then 10 minutes) instead of retrying every minute.
 
 **Codex:** usage comes from ChatGPT's usage endpoint, using the sign-in Codex stores in `~/.codex/auth.json` (read-only — ClaudeBar never modifies it). If that fails, it reads the most recent rate-limit snapshot from Codex's session logs in `~/.codex/sessions`.
 

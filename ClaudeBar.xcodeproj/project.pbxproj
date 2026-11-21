@@ -15,6 +15,7 @@
 		6A4713EC1138CD9E966154EA /* CodexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22174ACF2B2306EA5385B949 /* CodexService.swift */; };
 		916FA439503CE7F2D04C7792 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA9B132384496036D3E9349 /* AppState.swift */; };
 		98C39106549B5333E50DC0B4 /* OAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7B0A36E88396DB8FAA658B /* OAuthService.swift */; };
+		6F2D1B8C4E3A5F7B9C0D1E2F /* ClaudeWebService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1C0A7B3D2F4E6A8B9C0D1E /* ClaudeWebService.swift */; };
 		A67D3B99817F6CC20DE88999 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28BE87B72885F3A528921DE /* UpdateService.swift */; };
 		B370453F9598A14564939E58 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3886CA8C86B535BB48261C12 /* KeychainService.swift */; };
 		B9C44247DA1B6F1EDFA15C58 /* LoginWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0DCE07C4374E9F073B69CB /* LoginWindowController.swift */; };
@@ -31,6 +32,7 @@
 		48D2EF2E434694289362E89F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6F0DCE07C4374E9F073B69CB /* LoginWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWindowController.swift; sourceTree = "<group>"; };
 		7B7B0A36E88396DB8FAA658B /* OAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthService.swift; sourceTree = "<group>"; };
+		5E1C0A7B3D2F4E6A8B9C0D1E /* ClaudeWebService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeWebService.swift; sourceTree = "<group>"; };
 		B29F2ABCDF995417428CB83B /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		B5293526F91B53326FAAF6B5 /* ClaudeBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeBarApp.swift; sourceTree = "<group>"; };
 		C592DAA9AD0DF7E8B70DCB48 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -58,6 +60,7 @@
 			isa = PBXGroup;
 			children = (
 				F0B6013F37A8E68B70D4FE0E /* AdminApiService.swift */,
+				5E1C0A7B3D2F4E6A8B9C0D1E /* ClaudeWebService.swift */,
 				22174ACF2B2306EA5385B949 /* CodexService.swift */,
 				3886CA8C86B535BB48261C12 /* KeychainService.swift */,
 				7B7B0A36E88396DB8FAA658B /* OAuthService.swift */,
@@ -207,6 +210,7 @@
 				693C6AFBA38A88368D2B95CA /* AdminApiService.swift in Sources */,
 				916FA439503CE7F2D04C7792 /* AppState.swift in Sources */,
 				165537AEABCB033E829853EA /* ClaudeBarApp.swift in Sources */,
+				6F2D1B8C4E3A5F7B9C0D1E2F /* ClaudeWebService.swift in Sources */,
 				6A4713EC1138CD9E966154EA /* CodexService.swift in Sources */,
 				254383DE05929288E7BD139C /* ContentView.swift in Sources */,
 				B370453F9598A14564939E58 /* KeychainService.swift in Sources */,

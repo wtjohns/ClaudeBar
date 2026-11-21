@@ -72,15 +72,29 @@ final class CodexService {
     /// Session logs can be hundreds of MB; only the tail is read.
     private nonisolated static let tailBytes = 4 * 1024 * 1024
 
+    /// Newest session log from the last full scan. Walking ~/.codex/sessions every minute is
+    /// wasteful, so the tree is rescanned at most every `logRescanInterval`.
+    private var cachedLogFile: URL?
+    private var lastLogScan = Date.distantPast
+    private static let logRescanInterval: TimeInterval = 10 * 60
+
     private func readLatestSnapshot() async -> CodexUsage? {
         let sessions = codexHome.appendingPathComponent("sessions", isDirectory: true)
-        let task = Task.detached(priority: .utility) { () -> CodexUsage? in
+        let rescan = cachedLogFile == nil || Date().timeIntervalSince(lastLogScan) > Self.logRescanInterval
+        let cached = cachedLogFile
+        let task = Task.detached(priority: .utility) { () -> (file: URL?, usage: CodexUsage?) in
             // Long-running sessions keep appending to the file in the folder of the day they
             // started, so pick the newest file by modification date rather than by path.
-            guard let file = Self.newestLogFile(in: sessions) else { return nil }
-            return Self.lastSnapshot(in: file)
+            guard let file = rescan ? Self.newestLogFile(in: sessions) : cached else { return (nil, nil) }
+            return (file, Self.lastSnapshot(in: file))
         }
-        let result = await task.value
+        let (file, result) = await task.value
+        if rescan {
+            cachedLogFile = file
+            lastLogScan = Date()
+        } else if result == nil {
+            cachedLogFile = nil   // cached file vanished or has no snapshot; rescan next time
+        }
         if result == nil { log("log: no rate-limit snapshot found") }
         return result
     }
